@@ -43,8 +43,8 @@ def format_mtl_file(filename, filename2):
 
 def render_with_blender(layout_file, objects, filename, lamp, camera_info):
     # bpy.ops.wm.open_mainfile(filepath="./untitled.blend")
-    for item in bpy.context.scene.objects:
-        bpy.context.scene.objects.unlink(item)
+    for item in bpy.context.scene.collection.objects:
+        bpy.context.scene.collection.objects.unlink(item)
 
     for item in bpy.data.objects:
         bpy.data.objects.remove(item)
@@ -64,7 +64,8 @@ def render_with_blender(layout_file, objects, filename, lamp, camera_info):
     scene.camera.rotation_euler = camera_info["euler"]
 
     # ライトを置く
-    bpy.ops.object.lamp_add(type='POINT', location=lamp["location"])
+    bpy.ops.object.light_add(type='POINT', location=lamp["location"])
+    bpy.data.lights["Point"].energy = 1000 # 100W
 
     # レイアウトファイルのインポート
     bpy.ops.import_scene.obj(filepath=layout_file)
@@ -81,7 +82,7 @@ def render_with_blender(layout_file, objects, filename, lamp, camera_info):
                         [0, 1, 0]])
         new_trans = np.dot(gl2bl, M)
         rotation_matrix = new_trans[:, :3]
-        rot = Rotation.from_dcm(rotation_matrix)
+        rot = Rotation.from_matrix(rotation_matrix)
         euler = rot.as_euler('xyz')
         for i in c:
             scale = object["scale"]
@@ -132,11 +133,12 @@ def render_with_blender(layout_file, objects, filename, lamp, camera_info):
 
     now = datetime.datetime.now()
     # save_name = now.strftime('%Y%m%d_%H%M%S') + '.exr'
-    save_name = "0117/" + filename[filename.find("_d") + 1:].replace("txt", "exr")
+    save_name = "0426/" + filename[filename.find("_d") + 1:].replace("txt", "exr")
     bpy.data.images['Render Result'].save_render(filepath="./output/depth/" + save_name)
 
     bpy.context.scene.use_nodes = False
     bpy.ops.render.render(use_viewport=True)
+    print(save_name)
     bpy.data.images['Render Result'].save_render(filepath="/Volumes/WD_HDD_2TB/Dataset/EXRfiles/" + save_name)
 
 def parse_description(filename):
@@ -207,7 +209,7 @@ def parse_description(filename):
         print ("Could not open the description file...")
 
 def output_lamp_camera_information(camera, lamp, description_filename):
-    save_name = "0117/" + description_filename[description_filename.find("_d") + 1:]
+    save_name = "0426/" + description_filename[description_filename.find("_d") + 1:]
     # now = datetime.datetime.now()
     # save_name = now.strftime('%Y%m%d_%H%M%S') + '.txt'
     save_name = "/Volumes/WD_HDD_2TB/Dataset/camera_lamp_information/" + save_name
@@ -233,7 +235,7 @@ def calculate_camera_rotation(camera_location, attention_point, camera_location_
                         [0, 1, 0]])
         # rotation_matrix = np.dot(rotation_matrix,gl2bl)
         # rotation_matrix = np.linalg.inv(rotation_matrix)
-        rot = Rotation.from_dcm(rotation_matrix)
+        rot = Rotation.from_matrix(rotation_matrix)
         # euler = rot.as_euler('zyx')
         r = rotation_matrix
         matrix = mathutils.Matrix(((r[0][0],r[0][1], r[0][2]), (r[1][0], r[1][1], r[1][2]), (r[2][0], r[2][1], r[2][2])))
