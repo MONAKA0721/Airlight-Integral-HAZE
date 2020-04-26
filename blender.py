@@ -8,6 +8,10 @@ import re
 import mathutils
 import math
 import datetime
+import os
+
+today_str = datetime.date.today().strftime('%m%d')
+output_root = "/Volumes/WD_HDD_2TB/Dataset/"
 
 def format_mtl_file(filename, filename2):
     try:
@@ -65,7 +69,7 @@ def render_with_blender(layout_file, objects, filename, lamp, camera_info):
 
     # ライトを置く
     bpy.ops.object.light_add(type='POINT', location=lamp["location"])
-    bpy.data.lights["Point"].energy = 1000 # 100W
+    bpy.data.lights["Point"].energy = 500 # 単位はワット
 
     # レイアウトファイルのインポート
     bpy.ops.import_scene.obj(filepath=layout_file)
@@ -131,14 +135,14 @@ def render_with_blender(layout_file, objects, filename, lamp, camera_info):
     bpy.data.scenes[0].render.image_settings.color_depth = '32'
     bpy.ops.render.render(use_viewport=True)
 
-    now = datetime.datetime.now()
-    # save_name = now.strftime('%Y%m%d_%H%M%S') + '.exr'
-    save_name = "0426/" + filename[filename.find("_d") + 1:].replace("txt", "exr")
-    bpy.data.images['Render Result'].save_render(filepath="./output/depth/" + save_name)
+    save_name = today_str + "/" + filename[filename.find("_d") + 1:].replace("txt", "exr")
+    os.makedirs(os.path.join(output_root, "Depth", today_str), exist_ok=True)
+    bpy.data.images['Render Result'].save_render(filepath=os.path.join(output_root, "Depth", save_name))
 
     bpy.context.scene.use_nodes = False
     bpy.ops.render.render(use_viewport=True)
-    print(save_name)
+
+    os.makedirs(os.path.join(output_root, "EXRfiles", today_str), exist_ok=True)
     bpy.data.images['Render Result'].save_render(filepath="/Volumes/WD_HDD_2TB/Dataset/EXRfiles/" + save_name)
 
 def parse_description(filename):
@@ -209,9 +213,7 @@ def parse_description(filename):
         print ("Could not open the description file...")
 
 def output_lamp_camera_information(camera, lamp, description_filename):
-    save_name = "0426/" + description_filename[description_filename.find("_d") + 1:]
-    # now = datetime.datetime.now()
-    # save_name = now.strftime('%Y%m%d_%H%M%S') + '.txt'
+    save_name = today_str + "/" + description_filename[description_filename.find("_d") + 1:]
     save_name = "/Volumes/WD_HDD_2TB/Dataset/camera_lamp_information/" + save_name
     print(save_name)
     s = "camera_location: " + str(camera["location"]) + "\n" + \
@@ -219,6 +221,8 @@ def output_lamp_camera_information(camera, lamp, description_filename):
         "lamp_location: " + str(lamp["location"]) + "\n" + \
         "\n" + \
         "created_by: " + description_filename[description_filename.find("_d") + 1:]
+
+    os.makedirs(os.path.join(output_root, "camera_lamp_information", today_str), exist_ok=True)
     with open(save_name, mode='w') as f:
         f.write(s)
 
@@ -384,6 +388,8 @@ def main(filename):
     camera_info = { "location": camera_location, "euler": camera_euler }
     lamp_info = { "location" : lamp_location }
     layout_obj_file = layout_obj_file.replace("./", "./SceneNet/")
+    if 'office15' in layout_obj_file:
+        sys.exit()
     layout_mtl_file = layout_obj_file.replace("obj", "mtl")
     format_mtl_file(layout_mtl_file, layout_mtl_file)
     render_with_blender(layout_obj_file, objects, filename, lamp_info, camera_info)
