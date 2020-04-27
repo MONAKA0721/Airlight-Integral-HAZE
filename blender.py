@@ -12,23 +12,22 @@ import os
 
 today_str = datetime.date.today().strftime('%m%d')
 output_root = "/Volumes/WD_HDD_2TB/Dataset/"
+output_filename = str(len(glob.glob(os.path.join(output_root, 'EXRfiles', today_str, '*.exr')))+1)
 
-def format_mtl_file(filename, filename2):
+def format_mtl_file(layout_mtl_file):
     try:
         tmp_list = []
-        firstSlash = filename.find("/")
-        secondSlash = filename.find("/", firstSlash+1)
-        scene = filename[firstSlash+1:secondSlash]
-        with open(filename, "r", encoding="utf-8") as f:
+        firstSlash = layout_mtl_file.find("/")
+        secondSlash = layout_mtl_file.find("/", firstSlash+1)
+        scene = layout_mtl_file[firstSlash+1:secondSlash]
+        with open(layout_mtl_file, "r", encoding="utf-8") as f:
             for line in f:
                 if line[:6] == "map_Kd":
                     index = line.find(" ") + 3
                     if line[-5:-1] == ".bmp":
                         end_index = line.rfind("/")
                         map_Kd = "./SceneNet" + line[index:end_index] + "/*.bmp"
-                        # ./SceneNet/texture_library/cloth/*.bmp
                     else:
-                        print("else")
                         map_Kd = "./SceneNet" + line[index:-1] + "/*.bmp"
 
                     files = glob.glob(map_Kd)
@@ -38,14 +37,14 @@ def format_mtl_file(filename, filename2):
                 else:
                     tmp_list.append(line)
 
-        with open(filename2, 'w', encoding="utf-8") as f:
+        with open(layout_mtl_file, 'w', encoding="utf-8") as f:
             for line in tmp_list:
                 f.write(line)
 
     except IOError:
         print ("Could not open the .mtl file...")
 
-def render_with_blender(layout_file, objects, filename, lamp, camera_info):
+def render_with_blender(layout_file, lamp, camera_info):
     # bpy.ops.wm.open_mainfile(filepath="./untitled.blend")
     for item in bpy.context.scene.collection.objects:
         bpy.context.scene.collection.objects.unlink(item)
@@ -74,36 +73,6 @@ def render_with_blender(layout_file, objects, filename, lamp, camera_info):
     # レイアウトファイルのインポート
     bpy.ops.import_scene.obj(filepath=layout_file)
 
-    for object in objects[:10]:
-        a = set(bpy.data.objects)
-        objpath = "/Volumes/WD_HDD_2TB/ShapeNet/" + object["object_path"] + "/models/model_normalized.obj"
-        bpy.ops.import_scene.obj(filepath=objpath)
-        b = set(bpy.data.objects)
-        c = b - a
-        M = object["transformation"]
-        gl2bl = np.array([[1, 0, 0],
-                        [0, 0, -1],
-                        [0, 1, 0]])
-        new_trans = np.dot(gl2bl, M)
-        rotation_matrix = new_trans[:, :3]
-        rot = Rotation.from_matrix(rotation_matrix)
-        euler = rot.as_euler('xyz')
-        for i in c:
-            scale = object["scale"]
-            # i.scale.x = scale
-            # i.scale.y = scale
-            # i.scale.z = scale
-            i.location.x += new_trans[0][3]
-            i.location.y += new_trans[1][3]
-            if(new_trans[2][3] < 0):
-                i.location.z = - new_trans[2][3]
-            else:
-                i.location.z += new_trans[2][3]
-            i.location.z += 0.12
-            i.rotation_euler[0] = euler[0]
-            i.rotation_euler[1] = euler[1]
-            i.rotation_euler[2] = euler[2]
-
     #レンダリング
     # switch on nodes
     bpy.context.scene.use_nodes = True
@@ -126,7 +95,6 @@ def render_with_blender(layout_file, objects, filename, lamp, camera_info):
     # Links
     links.new(rl.outputs[2], v.inputs[2])  # link Image output to Viewer input
 
-    # bpy.data.scenes["Scene"].render.filepath = "../test4.jpg"
     bpy.data.scenes[0].render.resolution_x = 640
     bpy.data.scenes[0].render.resolution_y = 480
     bpy.data.scenes[0].render.resolution_percentage = 100
@@ -135,7 +103,7 @@ def render_with_blender(layout_file, objects, filename, lamp, camera_info):
     bpy.data.scenes[0].render.image_settings.color_depth = '32'
     bpy.ops.render.render(use_viewport=True)
 
-    save_name = today_str + "/" + filename[filename.find("_d") + 1:].replace("txt", "exr")
+    save_name = today_str + "/" + output_filename +  ".exr"
     os.makedirs(os.path.join(output_root, "Depth", today_str), exist_ok=True)
     bpy.data.images['Render Result'].save_render(filepath=os.path.join(output_root, "Depth", save_name))
 
@@ -143,84 +111,16 @@ def render_with_blender(layout_file, objects, filename, lamp, camera_info):
     bpy.ops.render.render(use_viewport=True)
 
     os.makedirs(os.path.join(output_root, "EXRfiles", today_str), exist_ok=True)
-    bpy.data.images['Render Result'].save_render(filepath="/Volumes/WD_HDD_2TB/Dataset/EXRfiles/" + save_name)
+    bpy.data.images['Render Result'].save_render(filepath=output_root + "EXRfiles/" + save_name)
 
-def parse_description(filename):
-    try:
-        layout_file = ""
-        object_path = ""
-        objects = []
-        with open(filename, "r", encoding="utf-8") as f:
-            count = 0
-            object_str_index = -1
-            scale_index = -1
-            transformation_index = -5
-            trans_row1 = np.array([0, 0, 0, 0])
-            trans_row2 = np.array([0, 0, 0, 0])
-            trans_row3 = np.array([0, 0, 0, 0])
-            transformation = None
-            for line in f:
-                if line[:11] == "layout_file":
-                    index = line.find(" ") + 1
-                    layout_file = line[index:-1]
-                if line[:6] == "object":
-                    object_str_index = count + 1
-                if line[:5] == "scale":
-                    scale_index = count + 1
-                if line[:14] == "transformation":
-                    transformation_index = count
-                if count == object_str_index:
-                    object_path = line[:-1]
-                if count == scale_index:
-                    scale = float(line[:-1])
-                    transformation = 0
-                if count == transformation_index + 1:
-                    index1 = line.find(" ")
-                    a = float(line[:index1])
-                    index2 = line.find(" ", index1 + 1)
-                    b = float(line[index1+1:index2])
-                    index3 = line.find(" ", index2 + 1)
-                    c = float(line[index2+1:index3])
-                    d = float(line[index3+1:-1])
-                    trans_row1 = np.array([a, b, c, d])
-                if count == transformation_index + 2:
-                    index1 = line.find(" ")
-                    a = float(line[:index1])
-                    index2 = line.find(" ", index1 + 1)
-                    b = float(line[index1+1:index2])
-                    index3 = line.find(" ", index2 + 1)
-                    c = float(line[index2+1:index3])
-                    d = float(line[index3+1:-1])
-                    trans_row2 = np.array([a, b, c, d])
-                if count == transformation_index + 3:
-                    index1 = line.find(" ")
-                    a = float(line[:index1])
-                    index2 = line.find(" ", index1 + 1)
-                    b = float(line[index1+1:index2])
-                    index3 = line.find(" ", index2 + 1)
-                    c = float(line[index2+1:index3])
-                    d = float(line[index3+1:-1])
-                    trans_row3 = np.array([a, b, c, d])
-                    transformation = np.stack([trans_row1, trans_row2, trans_row3])
-                if line == "\n":
-                    object = {"object_path":object_path, "scale":scale, "transformation":transformation}
-                    objects.append(object)
-                if line[0] == "#":
-                    break
-                count += 1
-        return layout_file, objects
-    except IOError:
-        print ("Could not open the description file...")
-
-def output_lamp_camera_information(camera, lamp, description_filename):
-    save_name = today_str + "/" + description_filename[description_filename.find("_d") + 1:]
-    save_name = "/Volumes/WD_HDD_2TB/Dataset/camera_lamp_information/" + save_name
-    print(save_name)
+def output_lamp_camera_information(camera, lamp, layout_obj_file):
+    save_name = today_str + "/" + output_filename + '.txt'
+    save_name = output_root + "camera_lamp_information/" + save_name
     s = "camera_location: " + str(camera["location"]) + "\n" + \
         "camera_euler(zyx): " + str(camera["euler"])  + "\n" + \
         "lamp_location: " + str(lamp["location"]) + "\n" + \
         "\n" + \
-        "created_by: " + description_filename[description_filename.find("_d") + 1:]
+        "created_by: " + layout_obj_file
 
     os.makedirs(os.path.join(output_root, "camera_lamp_information", today_str), exist_ok=True)
     with open(save_name, mode='w') as f:
@@ -228,7 +128,7 @@ def output_lamp_camera_information(camera, lamp, description_filename):
 
 def calculate_camera_rotation(camera_location, attention_point, camera_location_number, is_narrow):
     camera_location = np.array([camera_location[0], camera_location[1], camera_location[2]])
-    if is_narrow:
+    if not is_narrow:
         v = np.array(attention_point) - camera_location
         r_3 = -v/np.linalg.norm(v)
         r_1 = - np.cross(r_3, np.array([0, 0, 1]))
@@ -315,7 +215,6 @@ def determine_lamp_and_camera(layout_obj_file):
         x_max = office_x_max[filenumber-1]
         y_min = office_y_min[filenumber-1]
         y_max = office_y_max[filenumber-1]
-    print(filenumber)
     x_range = x_max - x_min
     y_range = y_max - y_min
     is_narrow = False
@@ -377,23 +276,20 @@ def determine_lamp_and_camera(layout_obj_file):
     lamp_z = min(2, max(1, camera_z + random.uniform(-0.5, 0.5)))
     attention_point = [(x_max + x_min)/2, (y_max + y_min)/2, 1.25]
     camera_location = (camera_x, camera_y, camera_z)
-    print(camera_location_number)
     camera_euler = calculate_camera_rotation(camera_location, attention_point, camera_location_number, is_narrow)
     lamp_location = (lamp_x, lamp_y, lamp_z)
     return camera_location, camera_euler, lamp_location
 
-def main(filename):
-    layout_obj_file, objects = parse_description(filename)
+def main(layout_obj_file):
+    # layout_obj_file like "./bedroom/bedroom6_layout.obj"
     camera_location, camera_euler, lamp_location = determine_lamp_and_camera(layout_obj_file)
     camera_info = { "location": camera_location, "euler": camera_euler }
     lamp_info = { "location" : lamp_location }
     layout_obj_file = layout_obj_file.replace("./", "./SceneNet/")
-    if 'office15' in layout_obj_file:
-        sys.exit()
     layout_mtl_file = layout_obj_file.replace("obj", "mtl")
-    format_mtl_file(layout_mtl_file, layout_mtl_file)
-    render_with_blender(layout_obj_file, objects, filename, lamp_info, camera_info)
-    output_lamp_camera_information(camera_info, lamp_info, filename)
+    format_mtl_file(layout_mtl_file)
+    render_with_blender(layout_obj_file, lamp_info, camera_info)
+    output_lamp_camera_information(camera_info, lamp_info, layout_obj_file.replace('./SceneNet/', ''))
 
 if __name__ == '__main__':
     args = sys.argv
