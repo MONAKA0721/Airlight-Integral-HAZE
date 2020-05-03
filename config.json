@@ -1,0 +1,453 @@
+{
+  "bathroom/bathroom2_layout.obj":{
+    "camera":{
+      "y": -2.5
+    },
+    "lamp":{
+      "y": -3
+    },
+    "at":{
+      "z": 0.7
+    }
+  },
+  "bathroom/bathroom3_layout.obj":{
+    "camera":{
+      "x": -2
+    },
+    "lamp":{
+      "x": -2.8
+    },
+    "at":{
+      "z": 1
+    }
+  },
+  "bathroom/bathroom4_layout.obj":{
+    "camera":{
+      "y": -2
+    },
+    "lamp":{
+      "y": -2.5
+    },
+    "at":{
+      "z": 1.2
+    }
+  },
+  "bathroom/bathroom9_layout.obj":{
+    "camera":{
+      "x": -0.73,
+      "y": -1.7
+    },
+    "lamp":{
+      "y": -2
+    },
+    "at":{
+      "z": 1.3
+    }
+  },
+  "bathroom/bathroom10_layout.obj":{
+    "camera":{
+      "y": -3
+    },
+    "lamp":{
+      "y": -3.2
+    },
+    "at":{
+      "z": 1.6
+    }
+  },
+  "bedroom/bedroom1_layout.obj":{
+    "camera":{
+      "y": -1
+    },
+    "lamp":{
+      "y": -1.6
+    },
+    "at":{
+      "z": 0.7
+    }
+  },
+  "bedroom/bedroom2_layout.obj":{
+    "camera":{
+      "y": 1.8
+    },
+    "lamp":{
+      "y": 2
+    },
+    "at":{
+      "z": 1
+    }
+  },
+  "bedroom/bedroom3_layout.obj":{
+    "camera":{
+      "x": 3.5
+    },
+    "lamp":{
+      "x": 4
+    },
+    "at":{
+      "z": 0.7
+    }
+  },
+  "bedroom/bedroom4_layout.obj":{
+    "camera":{
+      "x": -0.3
+    },
+    "lamp":{
+      "x": -0.7
+    },
+    "at":{
+      "z": 0.9
+    }
+  },
+  "bedroom/bedroom5_layout.obj":{
+    "camera":{
+      "x": -1.7
+    },
+    "lamp":{
+      "x": -2
+    },
+    "at":{
+      "z": 0.8
+    }
+  },
+  "bedroom/bedroom6_layout.obj":{
+    "camera":{
+      "x": -1.3
+    },
+    "lamp":{
+      "x": -1.6
+    },
+    "at":{
+      "z": 0.8
+    }
+  },
+  "bedroom/bedroom7_layout.obj":{
+    "camera":{
+      "y": -2.5
+    },
+    "lamp":{
+      "y": -3
+    },
+    "at":{
+      "z": 0.8
+    }
+  },
+  "bedroom/bedroom8_layout.obj":{
+    "camera":{
+      "y": -2
+    },
+    "lamp":{
+      "y": -2.5
+    },
+    "at":{
+      "z": 1
+    }
+  },
+  "bedroom/bedroom9_layout.obj":{
+    "camera":{
+      "x": 2,
+      "y": -0.5
+    },
+    "lamp":{
+      "x": 2.2,
+      "y": 0
+    },
+    "at":{
+      "z": 1
+    }
+  },
+  "bedroom/bedroom10_layout.obj":{
+    "camera":{
+      "y": -3
+    },
+    "lamp":{
+      "y": -4.5
+    },
+    "at":{
+      "z": 0.8
+    }
+  },
+  "bedroom/bedroom11_layout.obj":{
+    "camera":{
+      "y": 0
+    },
+    "lamp":{
+      "y": -0.6
+    },
+    "at":{
+      "z": 0.8
+    }
+  },
+  "kitchen/kitchen1_layout.obj":{
+    "camera":{
+      "x": -1.6
+    },
+    "lamp":{
+      "x": -2
+    },
+    "at":{
+      "z": 1
+    }
+  },
+  "kitchen/kitchen3_layout.obj":{
+    "camera":{
+      "x": 3.5,
+      "y": -4.5
+    },
+    "lamp":{
+      "x": 4,
+      "y": -5
+    },
+    "at":{
+      "z": 1
+    }
+  },
+  "kitchen/kitchen4_layout.obj":{
+    "camera":{
+      "y": -2
+    },
+    "lamp":{
+      "x": -1,
+      "y": -2.2
+    },
+    "at":{
+      "z": 1.5
+    }
+  },
+  "kitchen/kitchen7_layout.obj":{
+    "camera":{
+      "x": -1.8
+    },
+    "lamp":{
+      "x": -1.8
+    },
+    "at":{
+      "z": 1.2
+    }
+  },
+  "kitchen/kitchen9_layout.obj":{
+    "camera":{
+      "y": -1.3
+    },
+    "lamp":{
+      "y": -1.5
+    },
+    "at":{
+      "z": 0.8
+    }
+  },
+  "kitchen/kitchen12_layout.obj":{
+    "camera":{
+      "y": -1.3
+    },
+    "lamp":{
+      "y": -2
+    },
+    "at":{
+      "z": 1.3
+    }
+  },
+  "kitchen/kitchen13_layout.obj":{
+    "camera":{
+      "y": -1.5
+    },
+    "lamp":{
+      "y": -2
+    },
+    "at":{
+      "z": 1.5
+    }
+  },
+  "livingroom/livingroom2_layout.obj":{
+    "camera":{
+      "x": 0
+    },
+    "lamp":{
+      "x": -1
+    },
+    "at":{
+      "z": 0.8
+    }
+  },
+  "livingroom/livingroom3_layout.obj":{
+    "camera":{
+      "y": -0.5
+    },
+    "lamp":{
+      "y": 0.5
+    },
+    "at":{
+      "z": 0.8
+    }
+  },
+  "livingroom/livingroom4_layout.obj":{
+    "camera":{
+      "y": -1.5
+    },
+    "lamp":{
+      "y": -2.5
+    },
+    "at":{
+      "z": 1.2
+    }
+  },
+  "livingroom/livingroom8_layout.obj":{
+    "camera":{
+      "x": -3
+    },
+    "lamp":{
+      "x": -2
+    },
+    "at":{
+      "z": 1
+    }
+  },
+  "livingroom/livingroom9_layout.obj":{
+    "camera":{
+      "x": 1.5
+    },
+    "lamp":{
+      "x": 2
+    },
+    "at":{
+      "z": 1.2
+    }
+  },
+  "office/office1_layout.obj":{
+    "camera":{
+      "x": -3
+    },
+    "lamp":{
+      "x": -4
+    },
+    "at":{
+      "z": 1.2
+    }
+  },
+  "office/office2_layout.obj":{
+    "camera":{
+      "y": -1
+    },
+    "lamp":{
+      "x": -2.7,
+      "y": -2
+    },
+    "at":{
+      "z": 1.2
+    }
+  },
+  "office/office3_layout.obj":{
+    "camera":{
+      "x": 1.4,
+      "y": 2
+    },
+    "lamp":{
+      "y": 2.5
+    },
+    "at":{
+      "z": 1.2
+    }
+  },
+  "office/office4_layout.obj":{
+    "camera":{
+      "y": -3
+    },
+    "lamp":{
+      "y": -2.4
+    },
+    "at":{
+      "z": 2
+    }
+  },
+  "office/office5_layout.obj":{
+    "camera":{
+      "y": 1.7
+    },
+    "lamp":{
+      "y": 2.3
+    },
+    "at":{
+      "z": 1.5
+    }
+  },
+  "office/office6_layout.obj":{
+    "camera":{
+      "x": -0.5
+    },
+    "lamp":{
+      "x": 0.5
+    },
+    "at":{
+      "z": 1.5
+    }
+  },
+  "office/office8_layout.obj":{
+    "camera":{
+      "x": -4
+    },
+    "lamp":{
+      "x": -5
+    },
+    "at":{
+      "z": 1.4
+    }
+  },
+  "office/office9_layout.obj":{
+    "camera":{
+      "x": 2
+    },
+    "lamp":{
+      "x": 4,
+      "z": 2
+    },
+    "at":{
+      "z": 1.5
+    }
+  },
+  "office/office13_layout.obj":{
+    "camera":{
+      "y": -3
+    },
+    "lamp":{
+      "y": -4,
+      "z": 3.3
+    },
+    "at":{
+      "z": 3.3
+    }
+  },
+  "office/office14_layout.obj":{
+    "camera":{
+      "y": -5
+    },
+    "lamp":{
+      "y": -6,
+      "z": 1.8
+    },
+    "at":{
+      "z": 1.7
+    }
+  },
+  "office/office15_layout.obj":{
+    "camera":{
+      "y": 1
+    },
+    "lamp":{
+      "y": 1.5
+    },
+    "at":{
+      "z": 1.8
+    }
+  },
+  "office/office16_layout.obj":{
+    "camera":{
+      "y": 0.5
+    },
+    "lamp":{
+      "y": 1
+    },
+    "at":{
+      "z": 1.5
+    }
+  }
+}

@@ -9,10 +9,10 @@ import mathutils
 import math
 import datetime
 import os
+import json
 
 today_str = datetime.date.today().strftime('%m%d')
 output_root = "/Volumes/WD_HDD_2TB/Dataset/"
-output_filename = str(len(glob.glob(os.path.join(output_root, 'EXRfiles', today_str, '*.exr')))+1)
 
 def format_mtl_file(layout_mtl_file):
     try:
@@ -65,10 +65,11 @@ def render_with_blender(layout_file, lamp, camera_info):
     scene.camera.location = camera_info["location"]
     scene.camera.rotation_mode = 'ZYX'
     scene.camera.rotation_euler = camera_info["euler"]
+    bpy.data.cameras["Camera.001"].lens = 30
 
     # ライトを置く
     bpy.ops.object.light_add(type='POINT', location=lamp["location"])
-    bpy.data.lights["Point"].energy = 500 # 単位はワット
+    bpy.data.lights["Point"].energy = 300 # 単位はワット
 
     # レイアウトファイルのインポート
     bpy.ops.import_scene.obj(filepath=layout_file)
@@ -103,6 +104,7 @@ def render_with_blender(layout_file, lamp, camera_info):
     bpy.data.scenes[0].render.image_settings.color_depth = '32'
     bpy.ops.render.render(use_viewport=True)
 
+    output_filename = str(len(glob.glob(os.path.join(output_root, 'EXRfiles', today_str, '*.exr')))+1).zfill(4)
     save_name = today_str + "/" + output_filename +  ".exr"
     os.makedirs(os.path.join(output_root, "Depth", today_str), exist_ok=True)
     bpy.data.images['Render Result'].save_render(filepath=os.path.join(output_root, "Depth", save_name))
@@ -114,6 +116,7 @@ def render_with_blender(layout_file, lamp, camera_info):
     bpy.data.images['Render Result'].save_render(filepath=output_root + "EXRfiles/" + save_name)
 
 def output_lamp_camera_information(camera, lamp, layout_obj_file):
+    output_filename = str(len(glob.glob(os.path.join(output_root, 'camera_lamp_information', today_str, '*.exr')))+1).zfill(4)
     save_name = today_str + "/" + output_filename + '.txt'
     save_name = output_root + "camera_lamp_information/" + save_name
     s = "camera_location: " + str(camera["location"]) + "\n" + \
@@ -126,65 +129,45 @@ def output_lamp_camera_information(camera, lamp, layout_obj_file):
     with open(save_name, mode='w') as f:
         f.write(s)
 
-def calculate_camera_rotation(camera_location, attention_point, camera_location_number, is_narrow):
+def calculate_camera_rotation(camera_location, attention_point):
     camera_location = np.array([camera_location[0], camera_location[1], camera_location[2]])
-    if not is_narrow:
-        v = np.array(attention_point) - camera_location
-        r_3 = -v/np.linalg.norm(v)
-        r_1 = - np.cross(r_3, np.array([0, 0, 1]))
-        r_2 = np.cross(r_1, r_3)
-        rotation_matrix = np.concatenate([r_1.reshape(3, -1), r_2.reshape(3, -1), r_3.reshape(3, -1)], axis=1)
-        gl2bl = np.array([[1, 0, 0],
-                        [0, 0, -1],
-                        [0, 1, 0]])
-        # rotation_matrix = np.dot(rotation_matrix,gl2bl)
-        # rotation_matrix = np.linalg.inv(rotation_matrix)
-        rot = Rotation.from_matrix(rotation_matrix)
-        # euler = rot.as_euler('zyx')
-        r = rotation_matrix
-        matrix = mathutils.Matrix(((r[0][0],r[0][1], r[0][2]), (r[1][0], r[1][1], r[1][2]), (r[2][0], r[2][1], r[2][2])))
-        euler = matrix.to_euler('ZYX')
-        return euler
-    else:
-        euler_y = -1
-        if camera_location_number == 0:
-            euler_y = 90 + random.uniform(-30, 30)
-        elif camera_location_number == 1:
-            euler_y = 180 + random.uniform(-30, 30)
-        elif camera_location_number == 2:
-            euler_y = 270 + random.uniform(-30, 30)
-        elif camera_location_number == 3:
-            euler_y = 0 + random.uniform(-30, 30)
-        euler_zyx = [math.radians(90), math.radians(euler_y), 0]
-        return euler_zyx
+
+    v = np.array(attention_point) - camera_location
+    r_3 = -v/np.linalg.norm(v)
+    r_1 = - np.cross(r_3, np.array([0, 0, 1]))
+    r_2 = np.cross(r_1, r_3)
+    rotation_matrix = np.concatenate([r_1.reshape(3, -1), r_2.reshape(3, -1), r_3.reshape(3, -1)], axis=1)
+    gl2bl = np.array([[1, 0, 0],
+                    [0, 0, -1],
+                    [0, 1, 0]])
+    rot = Rotation.from_matrix(rotation_matrix)
+    r = rotation_matrix
+    matrix = mathutils.Matrix(((r[0][0],r[0][1], r[0][2]), (r[1][0], r[1][1], r[1][2]), (r[2][0], r[2][1], r[2][2])))
+    euler = matrix.to_euler('ZYX')
+    return euler
 
 def determine_lamp_and_camera(layout_obj_file):
     bathroom_x_min = [-0.6, -1.4, -2.6, 2.7, -1.5, -0.3, -0.5, -0.3, -2.2, -0.2, -5]
-    bathroom_x_max = [0.4, 1.5, 0.2, 3.5, 3.3, 2.5, 1.5, 5.7, 1.3, 4.5, -4.2]
+    bathroom_x_max = [0.4, 1.5, 1, 3.5, 3.3, 2.5, 1.5, 5.7, 1.3, 4.5, -4.2]
     bathroom_y_min = [-0.9, -1.7, -1.2, -1.5, -1.6, -1.8, -2, 0.2, -2.5, -4, 4.4]
-    bathroom_y_max = [1.1, 2.2, 0.5, 0, 4, 2.3, 2, 3, 2.3, 6.5, 5.2]
+    bathroom_y_max = [1.1, 2.2, 0.8, 0, 4, 2.3, 2, 3, 2.3, 6.5, 5.2]
     bedroom_x_min = [-1.9, -3.4, 0, -0.7, -2.4, -1.8, 3, -2.5, -1.4, -1, -5]
     bedroom_x_max = [1.7, 2, 4, 2.6, 2.2, 2.3, 5, 2.5, 3.3, 1.5, 0]
-    bedroom_y_min = [-1.7, -3.9, -2.7, 0.1, -1.9, -1.6, -1.7, -3.3, -3.6, -5, -2.4]
+    bedroom_y_min = [-1.7, -3.9, -2.7, 0.1, -1.9, -1.6, -1.7, -3.3, -3.6, -5, -1]
     bedroom_y_max = [2, 4.9, 1, 2.7, 1.5, 2.3, 1.4, 2.5, 0, 0.6, 3.6]
-    kitchen_x_min = [-2.4, -2.4, -1.6, -3.5, -3, -2, -4, -3.8, -2.6, -2.2, -1.8]
-    kitchen_x_max = [1.0, 0.5, 5, 8, 2, 2, -1.5, -1.7, 1.4, 2, 2.5]
-    kitchen_y_min = [-0.8, -4.2, -5.8, -6, -13, -4.8, -1.5, -1.7, -4.3, -2.2, -1.8]
-    kitchen_y_max = [1.3, 0.2, -1.2, 4, -6, 2.5, 1.3, 0.9, 3.4, 1.8, 2]
-    livingroom_x_min = [-1.7, -3.5, -2.8, -2.4, -4.7, -1.7, -2, -5, -4.5, -2, -3]
+    kitchen_x_min = [-2.4, -2.4, -1.6, -5, -3, -2, -6, -3.8, -2.6, -2.2, -1.8, 0.4, -2.2]
+    kitchen_x_max = [1.0, 0.5, 5, 3, 5, 2, -2, -1.7, 1.4, 2, 2.5, 1.6, 1.8]
+    kitchen_y_min = [-0.8, -4.2, -5.8, -4, -2, -4.8, -1.5, -1.7, -2, -2.2, -1.8, -0.93, -2.4]
+    kitchen_y_max = [1.3, 0.2, -1.2, 10, 4, 2.5, 1.3, 0.9, 6, 1.8, 2, 0.57, 2.2]
+    livingroom_x_min = [-1.7, -1, -2.8, -2.4, -4.7, -1.7, -2, -5, -4.5, -2, -3]
     livingroom_x_max = [1.3, 7, 2.8, 0.5, 3, 2.8, 1.5, 4, 2, 2, 0.9]
     livingroom_y_min = [-4, -1.5, -3, -3.9, -4, -2.4, -0.8, -3, -3, -2, -6]
     livingroom_y_max = [0, 0.7, 0.7, 2.4, 0, 1.8, 5, 0.7, 2.4, 2, 1]
-    office_x_min = [-8.8, -5.7, -4, -2.4, -3, -6, 0, -6, -5, -4, -6, -1, -15, -3, -4]
-    office_x_max = [3.3, 0.3, 4, 3, -0.3, 1, 0, 1.5, 4, 3, 5, 6, -6, -0.5, 3.5]
-    office_y_min = [-1.2, 0.5, -1, -5, -2, -4, 0, 0, -1.5, -7.5, -4, -6, -6, -7.5, -5]
-    office_y_max = [5.5, 5.5, 4.3, 4, 3.5, 4.5, 0, 4.3, 6, 1, 3.5, 10, 2.8, -0.3, 1.3]
-    x_max = 2
-    x_min = -2
-    y_max = 2
-    y_min = -2
+    office_x_min = [-4, -5.7, -4, -2.4, -3, -6, 0, -6, -5, -4, -6, -1, -15, -3, -4, -1.2]
+    office_x_max = [3.3, 0.3, 4, 3, -0.3, 1, 0, 1.5, 4, 3, 5, 6, -6, -0.5, 3.5, 1.4]
+    office_y_min = [-1.2, 0.5, -4, -5, -2, -4, 0, 0, -1.5, -7.5, -4, -6, -6, -7.5, -5, -1.7]
+    office_y_max = [5.5, 5.5, 2, 4, 3.5, 4.5, 0, 4.3, 6, 1, 3.5, 10, 2.8, -0.3, 1.3, 1]
     index = layout_obj_file.find("_")
-    filenumber = 0
     if layout_obj_file[2:4] == "ba":
         filenumber = int(layout_obj_file[19:index])
         x_min = bathroom_x_min[filenumber-1]
@@ -215,73 +198,47 @@ def determine_lamp_and_camera(layout_obj_file):
         x_max = office_x_max[filenumber-1]
         y_min = office_y_min[filenumber-1]
         y_max = office_y_max[filenumber-1]
-    x_range = x_max - x_min
-    y_range = y_max - y_min
-    is_narrow = False
-    is_x_narrow = False
-    is_y_narrow = False
-    if x_range < 3:
-        is_x_narrow = True
-    if y_range < 3:
-        is_y_narrow = True
-    first = random.choice(["x", "y"])
-    camera_location_number = -1
-    portion = 2/5
-    if first == "x":
-        camera_x = random.uniform(x_min+ x_range * portion, x_min + x_range*(1-portion))
-        if camera_x == x_min+x_range*portion or camera_x == x_min + x_range*(1-portion):
-            camera_y = random.uniform(y_min+y_range*portion, y_min + y_range*(1-portion))
-        else:
-            camera_y = random.choice([y_min+y_range*portion, y_min + y_range*(1-portion)])
-    else:
-        camera_y = random.uniform(y_min+y_range* portion, y_min + y_range* (1-portion))
-        if camera_y == y_min+y_range* portion or camera_y == y_min + y_range* (1-portion):
-            camera_x = random.uniform(x_min+x_range* portion, x_min + x_range* (1-portion))
-        else:
-            camera_x = random.choice([x_min+x_range* portion, x_min+ x_range * (1-portion)])
-    if camera_x == x_min + x_range* portion:
-        camera_location_number = 0
-    elif camera_y == y_min + y_range* portion:
-        camera_location_number = 1
-    elif camera_x == x_min + x_range * (1-portion):
-        camera_location_number = 2
-    elif camera_y == y_min + y_range* (1-portion):
-        camera_location_number = 3
-    camera_z = random.uniform(1, 1.5)
-    lamp_portion = (portion+0.5)/2
-    if camera_x <= x_min + x_range/2 and camera_y <= y_min + y_range/2:
-        lamp_x = random.uniform(x_min + x_range * lamp_portion, x_min + x_range*0.5)
-        lamp_y = random.uniform(y_min + y_range * lamp_portion, y_min + y_range*0.5)
-    elif camera_x <= x_min + x_range/2 and camera_y >= y_min + y_range/2:
-        lamp_x = random.uniform(x_min + x_range * lamp_portion, x_min + x_range*0.5)
-        lamp_y = random.uniform(y_min + y_range*0.5, y_min + y_range * (1-lamp_portion))
-    elif camera_x >= x_min + x_range/2 and camera_y >= y_min + y_range/2:
-        lamp_x = random.uniform(x_min + x_range*0.5, x_min + x_range * (1-lamp_portion))
-        lamp_y = random.uniform(y_min + y_range*0.5, y_min + y_range * (1-lamp_portion))
-    elif camera_x >= x_min + x_range/2 and camera_y <= y_min + y_range/2:
-        lamp_x = random.uniform(x_min + x_range*0.5, x_min + x_range * (1-lamp_portion))
-        lamp_y = random.uniform(y_min + y_range * lamp_portion, y_min + y_range*0.5)
-    if is_x_narrow and camera_location_number == 0:
-        is_narrow = True
-        lamp_x = random.uniform(x_min, x_min + x_range*portion)
-    elif is_x_narrow and camera_location_number == 2:
-        is_narrow = True
-        lamp_x = random.uniform(x_max, x_min + x_range*(1-portion))
-    elif is_y_narrow and camera_location_number == 1:
-        is_narrow = True
-        lamp_y = random.uniform(y_min, y_min + y_range*portion)
-    elif is_y_narrow and camera_location_number == 3:
-        is_narrow = True
-        lamp_y = random.uniform(y_max, y_min + y_range*(1-portion))
-    lamp_z = min(2, max(1, camera_z + random.uniform(-0.5, 0.5)))
-    attention_point = [(x_max + x_min)/2, (y_max + y_min)/2, 1.25]
+
+    with open('config.json') as f:
+        df = json.load(f)
+
+    filename = layout_obj_file.replace("./", '')
+
+    camera_x = random.uniform(x_min, x_max)
+    camera_y = random.uniform(y_min, y_max)
+    camera_z = random.uniform(1, 2.5)
+    lamp_x = random.uniform(x_min, x_max)
+    lamp_y = random.uniform(y_min, y_max)
+    lamp_z = random.uniform(1, 2.2)
+
+    if df[filename]["camera"].get("x") is not None:
+        camera_x = df[filename]["camera"]["x"]
+    if df[filename]["camera"].get("y") is not None:
+        camera_y = df[filename]["camera"]["y"]
+
+    if df[filename]["lamp"].get("x") is not None:
+        lamp_x = df[filename]["lamp"]["x"]
+    if df[filename]["lamp"].get("y") is not None:
+        lamp_y = df[filename]["lamp"]["y"]
+    if df[filename]["lamp"].get("z") is not None:
+        lamp_z = df[filename]["lamp"]["z"]
+
+    if df[filename]["at"].get("z") is not None:
+        at_z = df[filename]["at"]["z"]
+        camera_z = at_z + 0.3
+
+    attention_point = [(x_max + x_min)/2, (y_max + y_min)/2, at_z]
+    print("attention_point:", attention_point)
     camera_location = (camera_x, camera_y, camera_z)
-    camera_euler = calculate_camera_rotation(camera_location, attention_point, camera_location_number, is_narrow)
+    print("camera_location:", camera_location)
+    camera_euler = calculate_camera_rotation(camera_location, attention_point)
     lamp_location = (lamp_x, lamp_y, lamp_z)
+    print("lamp_location: ", lamp_location)
     return camera_location, camera_euler, lamp_location
 
-def main(layout_obj_file):
-    # layout_obj_file like "./bedroom/bedroom6_layout.obj"
+def main(filename):
+    layout_obj_file = filename.replace('./SceneNet', '.')
+    print(layout_obj_file.replace('./', ''))
     camera_location, camera_euler, lamp_location = determine_lamp_and_camera(layout_obj_file)
     camera_info = { "location": camera_location, "euler": camera_euler }
     lamp_info = { "location" : lamp_location }
@@ -293,4 +250,4 @@ def main(layout_obj_file):
 
 if __name__ == '__main__':
     args = sys.argv
-    main(str(args[-1]))
+    main(args[-1])

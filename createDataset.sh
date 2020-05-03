@@ -1,7 +1,10 @@
 #!/bin/bash
 
-for index in $(seq 10 15)
+objs=(`find . -type f -name "*.obj"`)
+num_objs=${#objs[*]}
+
+for index in $(seq 1 9999)
 do
-  S=$(printf "%04d" "${index}")
-  /Applications/Blender.app/Contents/MacOS/blender -b -P blender.py "/Volumes/WD_HDD_2TB/Description/scene_and_trajectory_description${S}.txt"
+  filename=(`echo ${objs[$((RANDOM%num_objs))]}`)
+  /Applications/Blender.app/Contents/MacOS/Blender -b -P blender.py ${filename}
 done
