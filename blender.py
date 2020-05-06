@@ -13,6 +13,7 @@ import json
 
 today_str = datetime.date.today().strftime('%m%d')
 output_root = "/Volumes/WD_HDD_2TB/Dataset/"
+output_filename = str(len(glob.glob(os.path.join(output_root, 'EXRfiles', today_str, '*.exr')))+1).zfill(4)
 
 def format_mtl_file(layout_mtl_file):
     try:
@@ -104,7 +105,6 @@ def render_with_blender(layout_file, lamp, camera_info):
     bpy.data.scenes[0].render.image_settings.color_depth = '32'
     bpy.ops.render.render(use_viewport=True)
 
-    output_filename = str(len(glob.glob(os.path.join(output_root, 'EXRfiles', today_str, '*.exr')))+1).zfill(4)
     save_name = today_str + "/" + output_filename +  ".exr"
     os.makedirs(os.path.join(output_root, "Depth", today_str), exist_ok=True)
     bpy.data.images['Render Result'].save_render(filepath=os.path.join(output_root, "Depth", save_name))
@@ -116,7 +116,6 @@ def render_with_blender(layout_file, lamp, camera_info):
     bpy.data.images['Render Result'].save_render(filepath=output_root + "EXRfiles/" + save_name)
 
 def output_lamp_camera_information(camera, lamp, layout_obj_file):
-    output_filename = str(len(glob.glob(os.path.join(output_root, 'camera_lamp_information', today_str, '*.exr')))+1).zfill(4)
     save_name = today_str + "/" + output_filename + '.txt'
     save_name = output_root + "camera_lamp_information/" + save_name
     s = "camera_location: " + str(camera["location"]) + "\n" + \

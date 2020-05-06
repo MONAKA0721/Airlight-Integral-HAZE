@@ -20,23 +20,15 @@ def import_exrfile(filePath):
     blue = np.array(array.array('f', b_str))
     depth = np.array(array.array('f', z_str[0]))
     depth =  depth.reshape(480, 640)
-    # dw = img_exr.header()['dataWindow']
-    # size = (dw.max.x - dw.min.x + 1, dw.max.y - dw.min.y + 1)
     img = np.array([[r, g, b] for r, g, b in zip(red, green, blue)])
-    img = np.where(img>1, 1, img)
     threshold = 10
     depth_mask = depth < threshold
     depth_mask2 = depth > threshold
     depth = depth * depth_mask + depth_mask2 * threshold
-    depth = depth / (10/4)
     hazefree = (img.T).flatten()
     hazefree = hazefree.reshape(3, 480, 640)
     hazefree = hazefree.astype(np.float32)
     print("depth max : ", np.max(depth))
-    gamma = 2.2
-
-    # hazefree = (hazefree) ** (1/gamma)
-    # img = (img) ** (1/gamma)
     return hazefree, depth, img
 
 def calc(vp_vec, dvp, sp_vec, dsp, g, samp, vs_vec, beta, resolution):
@@ -67,7 +59,6 @@ def calc(vp_vec, dvp, sp_vec, dsp, g, samp, vs_vec, beta, resolution):
     y = np.linalg.norm(vs_vec.reshape(1,3) - vq_vec, ord=2, axis=2) # (samp, resolution)
 
     cos = np.sum( -vq_norm * sq_norm, axis=2) # (samp, resolution)
-    print(np.max(cos))
     cos_sum = np.sum(cos, axis=0, keepdims=True)
 
     p = (1 - np.power(g, 2)) / (np.power((1 - 2 * g * cos + g**2),1.5) )
@@ -96,7 +87,7 @@ def output_beta_information(filePath, beta):
         f.write(s)
 
 def depth2vp(depth):
-    fovy = 28.1
+    fovy = 61.9
     width = 640
     height = 480
     f = height/ (2* math.tan(math.radians(fovy/2)))
@@ -155,12 +146,10 @@ def add_scatter(img, depth, camera_location, lamp_location, camera_euler):
     resolution = width * height
 
     # use below for main net dataset
-    beta = random.uniform(0, 1)
+    beta = random.uniform(0.1, 0.4)
 
     # #use below for Ls net dataset
     # beta = np.random.rand(307200).reshape(1, 307200)
-
-    beta = 0.5 * beta + 0.2
 
     print("beta:", beta)
     g = 0.9
@@ -169,7 +158,7 @@ def add_scatter(img, depth, camera_location, lamp_location, camera_euler):
     # 積分の結果
     s, cos_sum = calc(vp_vec, dvp, sp_vec, dsp, g, 100, vs_vec, beta, resolution) # (1, resolution)
 
-    watt = 5000
+    watt = 300
     light_intensity = watt/(4*math.pi)
     light_intensity = np.array([light_intensity, light_intensity, light_intensity]).reshape(3, 1)
 
@@ -241,52 +230,48 @@ def parse_camera_and_lamp_information(filePath):
                 camera_euler = [ez, ey, ex]
     return np.array(camera_location), np.array(lamp_location), camera_euler
 
-def main(outputDirName, filename):
+def main(inputDirName, outputDirName, filename):
     print("-------------------------------------------")
-    print("processing : ",filename)
-    date = "/0503/"
-    gamma = 2.2
+    print("processing : ", filename)
 
-    hazefree, depth, img = import_exrfile(filePath="../Dataset/EXRfiles" + date + filename)
-    print(depth)
-    camera_location, lamp_location, camera_euler = parse_camera_and_lamp_information(filePath="../Dataset/camera_lamp_information" + date +filename.replace("exr", "txt"))
+    input_root = "/Volumes/WD_HDD_2TB/Dataset/"
+    output_root = "/Volumes/WD_HDD_2TB/Dataset/"
+
+    hazefree, depth, img = import_exrfile(filePath=os.path.join(input_root, 'EXRfiles', inputDirName, filename))
+    camera_location, lamp_location, camera_euler = parse_camera_and_lamp_information(filePath=os.path.join(input_root, 'camera_lamp_information', inputDirName, filename.replace('exr', 'txt')))
     hazy, Ls, Ld, beta, integral, vs_vec, cos_sum = add_scatter(img, depth, camera_location, lamp_location, camera_euler)
-    camera_location = np.array(camera_location)
-    lamp_location = np.array(lamp_location)
     depth = depth.reshape(1, 480, 640)
     print("Hazy max : ", np.max(hazy))
     print("vs_vec : ", vs_vec)
     if(np.max(hazy)<1 and np.max(Ld)>=0.01):
 
-        # ガンマ補正
-        # hazy = (hazy) ** (1 / gamma)
         hazy = hazy.transpose(2, 0, 1) # (3, 480, 640) RGB
 
         save_mode = "val" if random.uniform(0,1) <= 0.1 else "train"
 
         array = [hazy, hazefree, depth, beta, vs_vec, Ls]
-        os.makedirs('../Dataset/NdArray/' + outputDirName + '/train', exist_ok=True)
-        os.makedirs('../Dataset/NdArray/' + outputDirName + '/val', exist_ok=True)
-        np.save("../Dataset/NdArray/" + outputDirName + "/" + save_mode + "/" + filename.replace("exr", "npy"), array)
+        os.makedirs(os.path.join(output_root, 'NdArray', outputDirName, 'train'), exist_ok=True)
+        os.makedirs(os.path.join(output_root, 'NdArray', outputDirName, 'val'), exist_ok=True)
+        np.save(os.path.join(output_root, 'NdArray', outputDirName, save_mode, filename.replace("exr", "npy")), array)
 
         cv_hazefreePNG = cv2.cvtColor(hazefree.transpose(1, 2, 0)*255, cv2.COLOR_RGB2BGR)
-        os.makedirs('../Dataset/HazefreePNG/' + outputDirName + '/train', exist_ok=True)
-        os.makedirs('../Dataset/HazefreePNG/' + outputDirName + '/val', exist_ok=True)
-        cv2.imwrite("../Dataset/HazefreePNG/" + outputDirName + "/" + save_mode + "/" + filename.replace("exr", "png"), cv_hazefreePNG)
+        os.makedirs(os.path.join(output_root, 'HazefreePNG', outputDirName, 'train'), exist_ok=True)
+        os.makedirs(os.path.join(output_root, 'HazefreePNG', outputDirName, 'val'), exist_ok=True)
+        cv2.imwrite(os.path.join(output_root, 'HazefreePNG', outputDirName, save_mode, filename.replace("exr", "png")), cv_hazefreePNG)
 
-        cv_hazyPNG = cv2.cvtColor(hazy.transpose(1, 2, 0)*255, cv2.COLOR_RGB2BGR)
-        os.makedirs('../Dataset/HazedPNG/' + outputDirName + '/train', exist_ok=True)
-        os.makedirs('../Dataset/HazedPNG/' + outputDirName + '/val', exist_ok=True)
-        cv2.imwrite("../Dataset/HazedPNG/" + outputDirName + "/" + save_mode + "/" + filename.replace("exr", "png"), cv_hazyPNG)
+        cv_hazyPNG = cv2.cvtColor((hazy.transpose(1, 2, 0)*255).astype(np.uint8), cv2.COLOR_RGB2BGR)
+        os.makedirs(os.path.join(output_root, 'HazyPNG', outputDirName, 'train'), exist_ok=True)
+        os.makedirs(os.path.join(output_root, 'HazyPNG', outputDirName, 'val'), exist_ok=True)
+        cv2.imwrite(os.path.join(output_root, 'HazyPNG', outputDirName, save_mode, filename.replace("exr", "png")), cv_hazyPNG)
 
         cv_hazy = cv2.cvtColor(hazy.transpose(1, 2, 0), cv2.COLOR_RGB2BGR)
-        os.makedirs('../Dataset/HazedEXR/' + outputDirName + '/train', exist_ok=True)
-        os.makedirs('../Dataset/HazedEXR/' + outputDirName + '/val', exist_ok=True)
-        cv2.imwrite("../Dataset/HazedEXR/" + outputDirName + "/" + save_mode + "/" + filename, cv_hazy)
+        os.makedirs(os.path.join(output_root, 'HazyEXR', outputDirName, 'train'), exist_ok=True)
+        os.makedirs(os.path.join(output_root, 'HazyEXR', outputDirName, 'val'), exist_ok=True)
+        cv2.imwrite(os.path.join(output_root, 'HazyEXR', outputDirName, save_mode, filename), cv_hazy)
 
     else:
         print("この画像は使えません")
 
 if __name__ == '__main__':
     args = sys.argv
-    main(args[-2], args[-1]) # ex)description0.exr
+    main(args[-3], args[-2], args[-1]) # ex)description0.exr
