@@ -1,7 +1,7 @@
 # HAZE dataset based on airlight integral model with SceneNet layouts
 
 <p align="center">
-<img src="readme.png" alt="Front readme image" width=430>
+<img src="readme.png" alt="Front readme image" width=960>
 </p>
 
 ## Environment
