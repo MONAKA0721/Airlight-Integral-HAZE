@@ -1,19 +1,23 @@
-# 散乱画像生成モジュール
+# HAZE dataset based on airlight integral model with SceneNet layouts
 
 <p align="center">
 <img src="readme.png" alt="Front readme image" width=430>
 </p>
 
-## シーン画像生成
+## Environment
+- Python 3.7.7
+- blender 2.82
+
+## Create haze-free images with indoor scenes
 ```
-# 1000個の画像を生成する
+# create 1000 haze-free images
 
 $ bash createDataset.sh 1000
 ```
 
-## 散乱画像生成
+## Create hazy images
 ```
-# '0505'=inputDirName, '0505'=outputDirName, 1000=処理する個数
+# '0505'=inputDirName, '0505'=outputDirName, 1000=number of images to process
 
 $ bash add_scatter.sh 0505 0505 1000
 ```
